@@ -1,0 +1,143 @@
+/*
+  ESP32MQTTClient example
+  Library: https://github.com/cyijun/ESP32MQTTClient
+  (thread-safe wrapper around ESP-IDF's esp-mqtt component)
+
+  IMPORTANT: This library uses std::string, NOT Arduino String,
+  for all topic/payload parameters and callbacks. Passing an
+  Arduino String where std::string is expected will fail to
+  compile with "no matching function" errors.
+
+  Board:  ESP32 (Arduino core v2/v3+, ESP-IDF v4.x/v5.x)
+  What it does:
+    - Connects to WiFi
+    - Connects to an MQTT broker
+    - Subscribes to a topic and prints incoming messages
+    - Publishes a message every 5 seconds
+*/
+
+#include <Arduino.h>
+#include <WiFi.h>
+#include <string>
+#include "ESP32MQTTClient.h"
+
+// ---------- WiFi credentials ----------
+const char *ssid     = "YOUR_WIFI_SSID";
+const char *password = "YOUR_WIFI_PASSWORD";
+
+// ---------- MQTT settings ----------
+const char *MQTT_URI = "mqtt://YOUR_BROKER_ADDRESS:1883"; // or mqtts://... for TLS on 8883
+
+const std::string SUB_TOPIC = "esp32/test/sub";
+const std::string PUB_TOPIC = "esp32/test/pub";
+
+// The client object — global so callbacks can use it
+ESP32MQTTClient mqttClient;
+
+unsigned long lastPublish = 0;
+const unsigned long publishInterval = 5000; // ms
+
+// -----------------------------------------------------------------
+// Named callback for incoming subscribed messages.
+// Must take std::string, not Arduino String.
+// -----------------------------------------------------------------
+void onDataReceived(const std::string &payload)
+{
+  Serial.printf("[MQTT] Data received: %s\n", payload.c_str());
+
+  if (payload == "LED_ON") {
+    // digitalWrite(LED_BUILTIN, HIGH);
+  } else if (payload == "LED_OFF") {
+    // digitalWrite(LED_BUILTIN, LOW);
+  }
+}
+
+// If you need to know which topic a message came from, use the
+// topic+payload overload instead:
+//
+// void onDataReceivedWithTopic(const std::string &topic, const std::string &payload)
+// {
+//   Serial.printf("[MQTT] topic: %s | payload: %s\n", topic.c_str(), payload.c_str());
+// }
+// mqttClient.subscribe(SUB_TOPIC, onDataReceivedWithTopic);
+
+// -----------------------------------------------------------------
+// REQUIRED global callback — fires once the client connects.
+// Subscribe to topics and/or publish here.
+// -----------------------------------------------------------------
+void onMqttConnect(esp_mqtt_client_handle_t client)
+{
+  if (mqttClient.isMyTurn(client)) { // safe to omit if you only ever have one client
+    Serial.println("[MQTT] Connected to broker");
+
+    mqttClient.subscribe(SUB_TOPIC, onDataReceived);
+
+    mqttClient.publish(PUB_TOPIC, "ESP32 connected!", 0, false);
+  }
+}
+
+// -----------------------------------------------------------------
+// REQUIRED global event handler — signature depends on ESP-IDF version.
+// This wiring is mandatory; without it, MQTT events never reach the
+// client instance internally.
+// -----------------------------------------------------------------
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
+esp_err_t handleMQTT(esp_mqtt_event_handle_t event)
+{
+  mqttClient.onEventCallback(event);
+  return ESP_OK;
+}
+#else
+void handleMQTT(void *handler_args, esp_event_base_t base,
+                int32_t event_id, void *event_data)
+{
+  (void)base;
+  (void)event_id;
+  auto *client = static_cast<ESP32MQTTClient *>(handler_args);
+  auto *event  = static_cast<esp_mqtt_event_handle_t>(event_data);
+  client->onEventCallback(event);
+}
+#endif
+
+// -----------------------------------------------------------------
+// setup()
+// -----------------------------------------------------------------
+void setup()
+{
+  Serial.begin(115200);
+  delay(500);
+
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(300);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.print("WiFi connected, IP: ");
+  Serial.println(WiFi.localIP());
+
+  mqttClient.enableDebuggingMessages();
+  mqttClient.setURI(MQTT_URI);
+  mqttClient.setMqttClientName("esp32-client-01");
+  mqttClient.enableLastWillMessage("esp32/status", "offline", true);
+  mqttClient.setKeepAlive(30);
+
+  mqttClient.loopStart(); // returns immediately; runs in background task
+}
+
+// -----------------------------------------------------------------
+// loop()
+// -----------------------------------------------------------------
+void loop()
+{
+  // No mqttClient.loop() needed — it runs in its own background task.
+
+  if (mqttClient.isConnected() && millis() - lastPublish > publishInterval) {
+    lastPublish = millis();
+
+    std::string msg = "uptime_ms=" + std::to_string(millis());
+    bool ok = mqttClient.publish(PUB_TOPIC, msg, 0, false);
+    Serial.printf("[MQTT] Publish %s -> %s\n", ok ? "OK" : "FAILED", msg.c_str());
+  }
+}
