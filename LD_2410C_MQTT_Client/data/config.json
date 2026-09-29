@@ -1,0 +1,13 @@
+{
+  "ssid1": "Sri Anjaneya",
+  "password1": "ABCD123456",
+  "ssid2": "Sri Anjaneya_EXT",
+  "password2": "ABCD123456",
+  "ssid3": "Girish",
+  "password3": "Oracle2000",
+  "devicename" : "Toilet-1",
+  "mqttPublishingtopic"  :  "PRESENCE/BLR/MANSARVOVAR/A4562/STATUS",
+  "mqttSubcribingTopic"  : "PRESENCE/BLR/MANSARVOVAR/A4562/UPDATES",
+  "mqttbroker" :  "mqtt://broker.hivemq.com:1883"
+ }  
+ 
