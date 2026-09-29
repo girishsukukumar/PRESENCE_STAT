@@ -1,0 +1,31 @@
+
+{
+  "mean_no_of_day_visits": "7",
+  "mean_no_of_night_visits": "2",
+
+  "median_no_of_day_visits": "5",
+  "median_no_of_night_visits": "2",
+
+  "MAD_no_of_day_visits": "2",
+  "MAD_no_of_night_visits": "1",
+
+  "mean_duration_of_day_visits": "240",
+  "mean_duration_of_night_visits": "200",
+
+  "median_duration_of_day_visits": "180",
+  "median_duration_of_night_visits": "150",
+
+   "median_no_of_bedRoomMovements" : "5", 
+   "MAD_no_of_bedRoomMovements" : "3",
+
+  "MAD_duration_of_day_visits": "60",
+  "MAD_duration_of_night_visits": "50",
+  "BEDROOM_MAX_DURATION" : "3240000",
+  "BEDROOM_MOVEMENT_SCORE_LIMIT" : "10", 
+  "MAX_LIVINGROOM_DURATION_NIGHT" : "1800000",
+  "MAX_KITCHEN_DURATION_NIGHT" : "900000",
+  "MAX_BATHROOM_DURATION" : "3600000",
+  "BATHROOM_ALERT_THRESHOLD"  : "2",
+  "DAY_TIME_BATHROOM_VISIT_BASELINE" : "7"
+  
+}
